@@ -3,11 +3,12 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { analyzePrescription, extractMedicinesFromText, transcribeAudio } from '@/services/groq';
 import { searchMedicineOnline, SearchResult } from '@/services/search';
+
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Image, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface Medicine {
     name: string;
@@ -36,6 +37,8 @@ export default function MedicineFinderScreen() {
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [medicineLinks, setMedicineLinks] = useState<Record<string, SearchResult[]>>({});
     const [loadingLinks, setLoadingLinks] = useState<Record<string, boolean>>({});
+
+
 
     // Animations & Refs
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -272,6 +275,23 @@ export default function MedicineFinderScreen() {
         }
     };
 
+
+    const openDirections = (pharmacy: Pharmacy) => {
+        const { lat, lng } = pharmacy.coordinates;
+        const url = Platform.select({
+            ios: `maps://app?daddr=${lat},${lng}`,
+            android: `google.navigation:q=${lat},${lng}`,
+        });
+
+        if (url) {
+            Linking.openURL(url).catch(() => {
+                // Fallback to browser-based Google Maps
+                const fallbackUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+                Linking.openURL(fallbackUrl);
+            });
+        }
+    };
+
     // --- Image Picker ---
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -358,27 +378,40 @@ export default function MedicineFinderScreen() {
                                 )}
                             </View>
                         ))}
+
+                        {/* Google Maps Pharmacy Finder - Direct Link */}
+                        <TouchableOpacity
+                            style={[styles.pharmacyButton, { marginTop: 20, backgroundColor: '#4285F4' }]}
+                            onPress={() => Linking.openURL('https://www.google.com/maps/search/pharmacies+near+me')}
+                        >
+                            <IconSymbol name="map.fill" size={20} color="#fff" />
+                            <Text style={styles.pharmacyButtonText}>Find Pharmacies on Google Maps</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
             </ScrollView>
 
+
+
             {/* Media Menu */}
-            {showMediaMenu && (
-                <Animated.View style={[styles.mediaMenu, { opacity: menuAnim, transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
-                    <TouchableOpacity style={styles.mediaBtn} onPress={takePhoto}>
-                        <View style={styles.mediaIconBg}>
-                            <IconSymbol name="camera.fill" size={24} color="#fff" />
-                        </View>
-                        <Text style={styles.mediaLabel}>Camera</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.mediaBtn} onPress={pickImage}>
-                        <View style={styles.mediaIconBg}>
-                            <IconSymbol name="photo.fill" size={24} color="#fff" />
-                        </View>
-                        <Text style={styles.mediaLabel}>Photos</Text>
-                    </TouchableOpacity>
-                </Animated.View>
-            )}
+            {
+                showMediaMenu && (
+                    <Animated.View style={[styles.mediaMenu, { opacity: menuAnim, transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+                        <TouchableOpacity style={styles.mediaBtn} onPress={takePhoto}>
+                            <View style={styles.mediaIconBg}>
+                                <IconSymbol name="camera.fill" size={24} color="#fff" />
+                            </View>
+                            <Text style={styles.mediaLabel}>Camera</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.mediaBtn} onPress={pickImage}>
+                            <View style={styles.mediaIconBg}>
+                                <IconSymbol name="photo.fill" size={24} color="#fff" />
+                            </View>
+                            <Text style={styles.mediaLabel}>Photos</Text>
+                        </TouchableOpacity>
+                    </Animated.View>
+                )
+            }
 
             {/* Input Bar */}
             <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
@@ -428,7 +461,7 @@ export default function MedicineFinderScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
-        </KeyboardAvoidingView>
+        </KeyboardAvoidingView >
     );
 }
 
@@ -494,4 +527,65 @@ const styles = StyleSheet.create({
     recordingDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#ea4335', marginRight: 10 },
     recordingTime: { fontSize: 16, fontWeight: '700', marginRight: 10 },
     recordingText: { fontSize: 16, color: '#888' },
+
+    // Pharmacy Finder
+    pharmacyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#25D366',
+        padding: 16,
+        borderRadius: 16,
+        gap: 10,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 3,
+    },
+    pharmacyButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+
+    pharmacyResults: { gap: 15, marginTop: 20 },
+    pharmacyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
+    pharmacyCard: {
+        padding: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#eee',
+        gap: 12,
+    },
+    pharmacyCardHeader: { flexDirection: 'row', gap: 12 },
+    pharmacyName: { fontSize: 16, fontWeight: '700' },
+    pharmacyAddress: { fontSize: 13, opacity: 0.7, marginTop: 4 },
+    ratingBadge: {
+        backgroundColor: '#FFF3E0',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    ratingText: { fontSize: 13, fontWeight: '600', color: '#FF8F00' },
+    pharmacyFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        flexWrap: 'wrap',
+    },
+    statusBadge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+    },
+    statusText: { color: '#fff', fontSize: 11, fontWeight: '600' },
+    distanceText: { fontSize: 13, opacity: 0.6 },
+    directionsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(10, 126, 164, 0.1)',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 12,
+        gap: 4,
+        marginLeft: 'auto',
+    },
+    directionsText: { color: '#0a7ea4', fontSize: 13, fontWeight: '600' },
 });
