@@ -46,3 +46,9 @@ Dynamic Search Integration: Integrated Serper.dev to fetch live Google Search re
 Background Fetching: As soon as the AI identifies a medicine, the app automatically searches for "buy online Pakistan" in the background.
 Up-to-Date Sources: Instead of static links, users now get the top live results from stores like Dvago, EMeds, MedOnline, and others.
 Enhanced UI: Added loading indicators for each medicine card to show the search progress.
+
+## 6. Multi-modal Medicine Finder
+Voice-to-Procurement: Added Audio Recording support via expo-av. Recordings are transcribed using Groq Whisper (whisper-large-v3) and then processed for medicine names.
+Manual Text Input: Added a direct text entry mode for users who want to type medicine names manually.
+Unified Logic: All three modes (Image, Voice, Text) flow into the same structured extraction and dynamic procurement link generation.
+Pulse FeedbackUI: Implemented a recording animation to provide clear visual feedback when the microphone is active.

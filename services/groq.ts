@@ -46,3 +46,61 @@ export async function analyzePrescription(base64Image: string) {
         throw error;
     }
 }
+
+export async function transcribeAudio(audioUri: string) {
+    try {
+        const formData = new FormData();
+        // @ts-ignore
+        formData.append('file', {
+            uri: audioUri,
+            type: 'audio/m4a',
+            name: 'recording.m4a',
+        });
+        formData.append('model', 'whisper-large-v3');
+        formData.append('response_format', 'json');
+
+        const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+            },
+            body: formData,
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+        return data.text;
+    } catch (error) {
+        console.error('Groq Transcription Error:', error);
+        throw error;
+    }
+}
+
+export async function extractMedicinesFromText(text: string) {
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: 'llama-3.1-8b-instant',
+                messages: [
+                    {
+                        role: 'user',
+                        content: `Extract medicine names and dosages from this text. Return only JSON with keys "summary" and "medicines" (array of {name, dosage}). Text: "${text}"`,
+                    },
+                ],
+                temperature: 0.1,
+                response_format: { type: 'json_object' }
+            }),
+        });
+
+        const data = await response.json();
+        return JSON.parse(data.choices[0].message.content);
+    } catch (error) {
+        console.error('Groq Extraction Error:', error);
+        throw error;
+    }
+}
