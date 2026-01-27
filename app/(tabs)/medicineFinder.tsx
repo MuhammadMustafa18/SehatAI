@@ -2,16 +2,35 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { analyzePrescription } from '@/services/groq';
+import { searchMedicineOnline, SearchResult } from '@/services/search';
 import * as ImagePicker from 'expo-image-picker';
+import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+interface Medicine {
+    name: string;
+    dosage: string;
+}
+
+interface AnalysisResult {
+    summary: string;
+    medicines: Medicine[];
+}
+
+interface MedicineWithLinks extends Medicine {
+    links?: SearchResult[];
+    loadingLinks?: boolean;
+}
 
 export default function MedicineFinderScreen() {
     const colorScheme = useColorScheme() ?? 'light';
     const colors = Colors[colorScheme];
     const [image, setImage] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<string | null>(null);
+    const [result, setResult] = useState<AnalysisResult | null>(null);
+    const [medicineLinks, setMedicineLinks] = useState<Record<string, SearchResult[]>>({});
+    const [loadingLinks, setLoadingLinks] = useState<Record<string, boolean>>({});
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -49,22 +68,46 @@ export default function MedicineFinderScreen() {
     const processImage = async (base64: string) => {
         setLoading(true);
         setResult(null);
+        setMedicineLinks({});
+        setLoadingLinks({});
+
         try {
-            const text = await analyzePrescription(base64);
-            setResult(text);
+            const data = await analyzePrescription(base64);
+            setResult(data);
+
+            // Trigger background searches for each medicine
+            data.medicines.forEach((med: Medicine) => {
+                fetchLinks(med.name);
+            });
         } catch (error) {
             console.error(error);
-            setResult('Failed to analyze prescription. Please try again.');
+            alert('Failed to analyze prescription. Please try again.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchLinks = async (medName: string) => {
+        setLoadingLinks(prev => ({ ...prev, [medName]: true }));
+        try {
+            const links = await searchMedicineOnline(medName);
+            setMedicineLinks(prev => ({ ...prev, [medName]: links }));
+        } catch (error) {
+            console.error(`Error fetching links for ${medName}:`, error);
+        } finally {
+            setLoadingLinks(prev => ({ ...prev, [medName]: false }));
+        }
+    };
+
+    const openLink = async (url: string) => {
+        await WebBrowser.openBrowserAsync(url);
     };
 
     return (
         <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
             <Text style={[styles.title, { color: colors.text }]}>Prescription Reader</Text>
             <Text style={[styles.subtitle, { color: colors.text }]}>
-                Upload or take a photo of your prescription to extract medicines and instructions.
+                Analyze your prescription and find the best prices online instantly.
             </Text>
 
             <View style={styles.imageContainer}>
@@ -73,7 +116,7 @@ export default function MedicineFinderScreen() {
                 ) : (
                     <View style={[styles.placeholder, { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#222' }]}>
                         <IconSymbol name="doc.text.fill" size={48} color="#888" />
-                        <Text style={styles.placeholderText}>No image selected</Text>
+                        <Text style={styles.placeholderText}>Click below to start</Text>
                     </View>
                 )}
             </View>
@@ -92,14 +135,56 @@ export default function MedicineFinderScreen() {
             {loading && (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#0a7ea4" />
-                    <Text style={[styles.loadingText, { color: colors.text }]}>Analyzing Prescription...</Text>
+                    <Text style={[styles.loadingText, { color: colors.text }]}>Reading Prescription...</Text>
                 </View>
             )}
 
             {result && (
-                <View style={[styles.resultContainer, { backgroundColor: colorScheme === 'light' ? '#f9f9f9' : '#1a1a1a' }]}>
-                    <Text style={[styles.resultTitle, { color: colors.text }]}>Analysis Result:</Text>
-                    <Text style={[styles.resultText, { color: colors.text }]}>{result}</Text>
+                <View style={styles.resultsWrapper}>
+                    <View style={[styles.summaryCard, { backgroundColor: colorScheme === 'light' ? '#E3F2FD' : '#1D3D47' }]}>
+                        <Text style={[styles.summaryTitle, { color: colors.text }]}>AI Overview</Text>
+                        <Text style={[styles.summaryText, { color: colors.text }]}>{result.summary}</Text>
+                    </View>
+
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>Detected Medicines</Text>
+
+                    {result.medicines.map((med, index) => (
+                        <View key={index} style={[styles.medicineCard, { backgroundColor: colorScheme === 'light' ? '#fff' : '#1a1a1a' }]}>
+                            <View style={styles.medicineHeader}>
+                                <View style={styles.medicineInfo}>
+                                    <Text style={[styles.medicineName, { color: colors.text }]}>{med.name}</Text>
+                                    <Text style={[styles.medicineDosage, { color: colors.text }]}>{med.dosage}</Text>
+                                </View>
+                            </View>
+
+                            <View style={styles.divider} />
+
+                            <Text style={[styles.buyLabel, { color: colors.text }]}>Best Online Prices:</Text>
+
+                            {loadingLinks[med.name] ? (
+                                <ActivityIndicator size="small" color="#0a7ea4" style={{ alignSelf: 'flex-start', marginVertical: 10 }} />
+                            ) : (
+                                <View style={styles.linksContainer}>
+                                    {medicineLinks[med.name]?.length > 0 ? (
+                                        medicineLinks[med.name].map((link, idx) => (
+                                            <TouchableOpacity
+                                                key={idx}
+                                                style={styles.linkItem}
+                                                onPress={() => openLink(link.link)}
+                                            >
+                                                <IconSymbol name="chevron.right" size={14} color="#0a7ea4" />
+                                                <Text style={[styles.linkSource, { color: colors.text }]} numberOfLines={1}>
+                                                    {link.source} - <Text style={styles.linkTitle}>{link.title}</Text>
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))
+                                    ) : (
+                                        <Text style={styles.noLinks}>No online links found.</Text>
+                                    )}
+                                </View>
+                            )}
+                        </View>
+                    ))}
                 </View>
             )}
         </ScrollView>
@@ -118,37 +203,35 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 14,
         textAlign: 'center',
         marginBottom: 30,
         opacity: 0.7,
+        paddingHorizontal: 20,
     },
     imageContainer: {
         width: '100%',
-        height: 300,
-        borderRadius: 20,
+        height: 250,
+        borderRadius: 24,
         overflow: 'hidden',
-        marginBottom: 30,
-        elevation: 5,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
+        marginBottom: 25,
+        borderWidth: 1,
+        borderColor: '#eee',
     },
     previewImage: {
         width: '100%',
         height: '100%',
-        resizeMode: 'cover',
     },
     placeholder: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        gap: 10,
+        gap: 12,
     },
     placeholderText: {
         color: '#888',
-        fontSize: 16,
+        fontSize: 15,
+        fontWeight: '500',
     },
     buttonRow: {
         flexDirection: 'row',
@@ -159,17 +242,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#0a7ea4',
-        paddingHorizontal: 25,
-        paddingVertical: 15,
-        borderRadius: 15,
+        paddingHorizontal: 24,
+        paddingVertical: 14,
+        borderRadius: 16,
         gap: 10,
+        elevation: 2,
     },
     cameraButton: {
         backgroundColor: '#34a853',
     },
     buttonText: {
         color: '#fff',
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
     },
     loadingContainer: {
@@ -179,22 +263,97 @@ const styles = StyleSheet.create({
     loadingText: {
         marginTop: 10,
         fontSize: 16,
+        fontWeight: '500',
     },
-    resultContainer: {
+    resultsWrapper: {
         width: '100%',
-        padding: 20,
-        borderRadius: 20,
-        borderWidth: 1,
-        borderColor: '#eee',
         marginBottom: 40,
     },
-    resultTitle: {
+    summaryCard: {
+        padding: 20,
+        borderRadius: 20,
+        marginBottom: 30,
+    },
+    summaryTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        marginBottom: 10,
+        marginBottom: 8,
     },
-    resultText: {
+    summaryText: {
         fontSize: 15,
         lineHeight: 22,
+    },
+    sectionTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        marginBottom: 20,
+    },
+    medicineCard: {
+        padding: 20,
+        borderRadius: 24,
+        marginBottom: 20,
+        borderWidth: 1,
+        borderColor: '#eee',
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 5,
+    },
+    medicineHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    medicineInfo: {
+        flex: 1,
+    },
+    medicineName: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 4,
+    },
+    medicineDosage: {
+        fontSize: 14,
+        opacity: 0.6,
+        fontWeight: '500',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#eee',
+        marginVertical: 15,
+    },
+    buyLabel: {
+        fontSize: 14,
+        fontWeight: '700',
+        marginBottom: 12,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        opacity: 0.8,
+    },
+    linksContainer: {
+        gap: 12,
+    },
+    linkItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: 'rgba(10, 126, 164, 0.05)',
+        padding: 12,
+        borderRadius: 12,
+    },
+    linkSource: {
+        fontSize: 14,
+        fontWeight: '700',
+        flex: 1,
+    },
+    linkTitle: {
+        fontWeight: '400',
+        opacity: 0.8,
+    },
+    noLinks: {
+        fontSize: 14,
+        color: '#888',
+        fontStyle: 'italic',
     },
 });

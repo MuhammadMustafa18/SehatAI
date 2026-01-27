@@ -35,3 +35,14 @@ Used ThemedText and ThemedView for theme consistency.
 Decoupled API logic into 
 services/groq.ts
 .
+
+## 4. Medicine Procurement Links
+Structured Extraction: Updated the AI prompt to return a JSON object with a summary and a list of medicines (name and dosage).
+Search Integration: Created a utility that generates direct search URLs for popular online pharmacies (Dvago, EMeds, MedOnline).
+Actionable UI: The Medicine Finder now displays individual cards for each medicine with direct buttons to buy them online.
+
+## 5. Real-Time Online Market Links
+Dynamic Search Integration: Integrated Serper.dev to fetch live Google Search results for every extracted medicine.
+Background Fetching: As soon as the AI identifies a medicine, the app automatically searches for "buy online Pakistan" in the background.
+Up-to-Date Sources: Instead of static links, users now get the top live results from stores like Dvago, EMeds, MedOnline, and others.
+Enhanced UI: Added loading indicators for each medicine card to show the search progress.

@@ -16,7 +16,7 @@ export async function analyzePrescription(base64Image: string) {
                         content: [
                             {
                                 type: 'text',
-                                text: 'Extract all the medicines and the dosage instructions from this prescription. Format it clearly as a list. If some parts are illegible, skip them but focus on the medicine names and how to take them.',
+                                text: 'Extract all the medicines and the dosage instructions from this prescription. Return the response in strict JSON format with two keys: "summary" (a brief text overview) and "medicines" (an array of objects, each with "name" and "dosage"). Example: {"summary": "...", "medicines": [{"name": "Aspirin", "dosage": "100mg once daily"}]}. If illegible, skip but focus on medicine names.',
                             },
                             {
                                 type: 'image_url',
@@ -29,6 +29,7 @@ export async function analyzePrescription(base64Image: string) {
                 ],
                 temperature: 0.1,
                 max_tokens: 1024,
+                response_format: { type: 'json_object' }
             }),
         });
 
@@ -36,7 +37,10 @@ export async function analyzePrescription(base64Image: string) {
         if (data.error) {
             throw new Error(data.error.message);
         }
-        return data.choices[0].message.content;
+
+        // Parse the content as JSON
+        const content = data.choices[0].message.content;
+        return JSON.parse(content);
     } catch (error) {
         console.error('Groq API Error:', error);
         throw error;
