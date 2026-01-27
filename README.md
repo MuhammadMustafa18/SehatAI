@@ -1,50 +1,37 @@
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 1. 4-Tab Navigation
+Updated the tab layout to include:
+Home: Main service hub.
+Appointments: For scheduling and viewing sessions.
+Records: For medical reports and history.
+Profile: For user settings and account management.
+Integrated health-specific icons (Calendar, Document, Person, Medication) into the 
+IconSymbol
+ component.
+## 2. Redesigned Home Screen
+Personalized Header: Greets the user and shows the SehatAI brand.
+Service Grid: Quick access to Consultation, Pharmacy, Lab Tests, and Emergency services.
+Search Functionality: A clean search bar for finding health resources.
+Promotional Component: A "Virtual Consultation" card to drive key actions.
+Daily Health Tip: A curated tip section for user engagement.
+## 3. Prescription Reader (Powered by Groq Vision)
+Image Input: Users can now take a photo of a prescription or upload one from the gallery using expo-image-picker.
+AI Analysis: The app sends the image to Groq's llama-3.2-11b-vision-preview model via a secure service (
+groq.ts
+).
+Text Extraction: The AI extracts medicine names and dosage instructions, displaying them in a readable format.
+Environment Safety: Configured 
+.env
+ with EXPO_PUBLIC_ to ensure the API key is correctly loaded in the Expo environment.
+Verification Results
+UI and Navigation
+Verified that all 4 tabs are clickable and navigate to their respective screens.
+Verified that the Home screen correctly displays the service grid.
+Tested Prescription Reader: Successfully picked an image, triggered the loading state, and received/displayed AI analysis.
+Code Quality
+Cleaned up legacy files (removed 
+explore.tsx
+).
+Used ThemedText and ThemedView for theme consistency.
+Decoupled API logic into 
+services/groq.ts
+.
