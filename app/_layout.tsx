@@ -4,6 +4,9 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { initDB } from '@/services/database';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -11,6 +14,25 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [dbInitialized, setDbInitialized] = useState(false);
+
+  useEffect(() => {
+    initDB()
+      .then(() => setDbInitialized(true))
+      .catch(e => {
+        console.error("Database init failed:", e);
+        // Still allow app to load, but logs will show error
+        setDbInitialized(true);
+      });
+  }, []);
+
+  if (!dbInitialized) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

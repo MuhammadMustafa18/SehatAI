@@ -4,11 +4,16 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { analyzePrescription, extractMedicinesFromText, transcribeAudio } from '@/services/groq';
 import { searchMedicineOnline, SearchResult } from '@/services/search';
 
+// NEW SERVICES
+import { addMedicine, initDB } from '@/services/database';
+import { registerForPushNotificationsAsync, scheduleDoseWithNags } from '@/services/notifications';
+import RNDateTimePicker from '@react-native-community/datetimepicker';
+
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Image, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Image, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface Medicine {
     name: string;
@@ -38,7 +43,15 @@ export default function MedicineFinderScreen() {
     const [medicineLinks, setMedicineLinks] = useState<Record<string, SearchResult[]>>({});
     const [loadingLinks, setLoadingLinks] = useState<Record<string, boolean>>({});
 
+    // Reminder State
+    const [showReminderModal, setShowReminderModal] = useState(false);
+    const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null);
+    const [reminderFreq, setReminderFreq] = useState(2);
+    const [reminderTimes, setReminderTimes] = useState<string[]>(['10:00', '20:00']);
 
+    // Time Picker State
+    const [showTimePicker, setShowTimePicker] = useState(false);
+    const [activeTimeIndex, setActiveTimeIndex] = useState(0);
 
     // Animations & Refs
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -52,6 +65,8 @@ export default function MedicineFinderScreen() {
 
     // Cleaning up on unmount
     useEffect(() => {
+        initDB();
+        registerForPushNotificationsAsync();
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
             if (recording) {
@@ -275,8 +290,101 @@ export default function MedicineFinderScreen() {
         }
     };
 
+    // --- Reminder Logic ---
+    const openReminderSetup = (med: Medicine) => {
+        setSelectedMedicine(med);
 
-    const openDirections = (pharmacy: Pharmacy) => {
+        // Auto-detect frequency
+        let freq = 2; // Default
+        const dosageLower = med.dosage.toLowerCase();
+
+        if (dosageLower.includes('once') || dosageLower.includes('1 time') || dosageLower.includes('1x')) freq = 1;
+        else if (dosageLower.includes('twice') || dosageLower.includes('twize') || dosageLower.includes('2 times') || dosageLower.includes('2x')) freq = 2;
+        else if (dosageLower.includes('thrice') || dosageLower.includes('3 times') || dosageLower.includes('3x')) freq = 3;
+        else if (dosageLower.includes('4 times') || dosageLower.includes('4x')) freq = 4;
+
+        setReminderFreq(freq);
+
+        // Set initial times based on detected freq
+        let newTimes: string[] = [];
+        if (freq === 1) newTimes = ['10:00'];
+        if (freq === 2) newTimes = ['10:00', '20:00'];
+        if (freq === 3) newTimes = ['08:00', '14:00', '20:00'];
+        if (freq === 4) newTimes = ['08:00', '12:00', '16:00', '20:00'];
+        if (freq > 4) newTimes = Array(freq).fill('12:00');
+
+        setReminderTimes(newTimes);
+        setShowReminderModal(true);
+    };
+
+    const updateFrequency = (freq: number) => {
+        setReminderFreq(freq);
+        let newTimes: string[] = [];
+        if (freq === 1) newTimes = ['10:00'];
+        if (freq === 2) newTimes = ['10:00', '20:00'];
+        if (freq === 3) newTimes = ['08:00', '14:00', '20:00'];
+        if (freq === 4) newTimes = ['08:00', '12:00', '16:00', '20:00'];
+        if (freq > 4) {
+            // Just fill with something distinct or keep previous
+            newTimes = Array(freq).fill('12:00');
+        }
+        setReminderTimes(newTimes);
+    };
+
+    const updateTime = (index: number, text: string) => {
+        const newTimes = [...reminderTimes];
+        newTimes[index] = text;
+        setReminderTimes(newTimes);
+    };
+
+    const saveReminder = async () => {
+        if (selectedMedicine && reminderTimes.length > 0) {
+            setLoading(true);
+            try {
+                // Collect links for this medicine
+                const links = medicineLinks[selectedMedicine.name]?.map(l => l.link) || [];
+
+                const id = await addMedicine(
+                    selectedMedicine.name,
+                    selectedMedicine.dosage,
+                    reminderFreq,
+                    reminderTimes,
+                    links
+                );
+
+                await scheduleDoseWithNags(
+                    id,
+                    selectedMedicine.name,
+                    selectedMedicine.dosage,
+                    parseInt(reminderTimes[0].split(':')[0]),
+                    parseInt(reminderTimes[0].split(':')[1])
+                );
+
+                // Show Success
+                Alert.alert("Saved", "Reminder set successfully!", [
+                    { text: "OK", onPress: () => setShowReminderModal(false) }
+                ]);
+
+            } catch (e) {
+                console.error(e);
+                Alert.alert("Error", "Failed to save reminder");
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    const handleTimeChange = (event: any, selectedDate?: Date) => {
+        setShowTimePicker(false);
+        if (selectedDate) {
+            const hour = selectedDate.getHours().toString().padStart(2, '0');
+            const minute = selectedDate.getMinutes().toString().padStart(2, '0');
+            updateTime(activeTimeIndex, `${hour}:${minute}`);
+        }
+    };
+
+
+    const openDirections = (pharmacy: SearchResult) => {
         const { lat, lng } = pharmacy.coordinates;
         const url = Platform.select({
             ios: `maps://app?daddr=${lat},${lng}`,
@@ -376,6 +484,14 @@ export default function MedicineFinderScreen() {
                                         ))}
                                     </View>
                                 )}
+
+                                <TouchableOpacity
+                                    style={[styles.reminderBtn, { backgroundColor: colorScheme === 'light' ? '#E3F2FD' : '#2C3E50' }]}
+                                    onPress={() => openReminderSetup(med)}
+                                >
+                                    <IconSymbol name="bell.fill" size={16} color="#0a7ea4" />
+                                    <Text style={styles.reminderBtnText}>Set Reminder</Text>
+                                </TouchableOpacity>
                             </View>
                         ))}
 
@@ -461,6 +577,86 @@ export default function MedicineFinderScreen() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* Reminder Modal */}
+            <Modal
+                transparent={true}
+                visible={showReminderModal}
+                animationType="slide"
+                onRequestClose={() => setShowReminderModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>Set Reminder</Text>
+                        <Text style={[styles.modalSubtitle, { color: colors.text }]}>
+                            {selectedMedicine?.name} ({selectedMedicine?.dosage})
+                        </Text>
+
+                        <Text style={[styles.label, { color: colors.text }]}>How many times a day?</Text>
+                        <View style={styles.freqRow}>
+                            {[1, 2, 3, 4].map(num => (
+                                <TouchableOpacity
+                                    key={num}
+                                    style={[
+                                        styles.freqOption,
+                                        reminderFreq === num && styles.freqOptionSelected
+                                    ]}
+                                    onPress={() => updateFrequency(num)}
+                                >
+                                    <Text style={[
+                                        styles.freqText,
+                                        reminderFreq === num && styles.freqTextSelected,
+                                        { color: reminderFreq === num ? '#fff' : colors.text }
+                                    ]}>{num}x</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <Text style={[styles.label, { color: colors.text }]}>Set Timings (HH:MM)</Text>
+                        <View style={styles.timesContainer}>
+                            {reminderTimes.map((time, idx) => (
+                                <View key={idx} style={styles.timeInputRow}>
+                                    <Text style={{ color: colors.text, width: 60 }}>Dose {idx + 1}</Text>
+                                    <TouchableOpacity
+                                        style={[styles.timeInputBtn, { borderBottomColor: colors.text }]}
+                                        onPress={() => {
+                                            setActiveTimeIndex(idx);
+                                            setShowTimePicker(true);
+                                        }}
+                                    >
+                                        <Text style={{ color: colors.text, fontSize: 16 }}>{time}</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </View>
+
+                        {showTimePicker && (
+                            <RNDateTimePicker
+                                value={(() => {
+                                    const [h, m] = reminderTimes[activeTimeIndex].split(':');
+                                    const d = new Date();
+                                    d.setHours(Number(h));
+                                    d.setMinutes(Number(m));
+                                    return d;
+                                })()}
+                                mode="time"
+                                is24Hour={true}
+                                display="spinner"
+                                onChange={handleTimeChange}
+                            />
+                        )}
+
+                        <View style={styles.modalActions}>
+                            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowReminderModal(false)}>
+                                <Text style={{ color: '#888' }}>Cancel</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.saveBtn} onPress={saveReminder}>
+                                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Save & Schedule</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </KeyboardAvoidingView >
     );
 }
@@ -491,6 +687,42 @@ const styles = StyleSheet.create({
     links: { gap: 10 },
     link: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(10, 126, 164, 0.05)', padding: 12, borderRadius: 10 },
     linkSource: { fontSize: 13, fontWeight: '500', flex: 1, marginRight: 10 },
+
+    reminderBtn: {
+        marginTop: 15,
+        padding: 12,
+        borderRadius: 10,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+    reminderBtnText: {
+        color: '#0a7ea4',
+        fontWeight: '600',
+    },
+
+    // Modal
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+    modalContent: { width: '100%', borderRadius: 20, padding: 24, elevation: 5 },
+    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
+    modalSubtitle: { fontSize: 14, opacity: 0.7, marginBottom: 20 },
+    label: { fontSize: 16, fontWeight: '600', marginTop: 15, marginBottom: 10 },
+
+    freqRow: { flexDirection: 'row', gap: 10 },
+    freqOption: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ccc', justifyContent: 'center', alignItems: 'center' },
+    freqOptionSelected: { backgroundColor: '#0a7ea4', borderColor: '#0a7ea4' },
+    freqText: { fontWeight: '600', color: '#333' },
+    freqTextSelected: { color: '#fff' },
+
+    timesContainer: { gap: 10 },
+    timeInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    timeInput: { flex: 1, padding: 8, fontSize: 16 },
+    timeInputBtn: { flex: 1, padding: 8, borderBottomWidth: 1 },
+
+    modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 30 },
+    cancelBtn: { padding: 10 },
+    saveBtn: { backgroundColor: '#0a7ea4', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
 
     // Dynamic UI
     mediaMenu: {
