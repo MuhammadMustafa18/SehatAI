@@ -26,6 +26,20 @@ const MAPPING = {
   'mic': 'mic',
   'camera.fill': 'photo-camera',
   'photo.fill': 'photo-library',
+  'waveform.path.ecg': 'local-hospital',
+  'bell.fill': 'notifications',
+  'exclamationmark.triangle.fill': 'error',
+  'bell.slash.fill': 'notifications-off',
+  'trash.fill': 'delete',
+  'plus.circle.fill': 'add-circle',
+  'bolt.fill': 'flash-on',
+  'checkmark.circle.fill': 'check-circle',
+  'clock.fill': 'schedule',
+  'pills.fill': 'medication',
+  'map.fill': 'map',
+  'cart.fill': 'shopping-cart',
+  'chevron.up': 'expand-less',
+  'chevron.down': 'expand-more',
 } as any as IconMapping;
 
 /**

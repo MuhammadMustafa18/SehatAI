@@ -1,5 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { addContact, ContactRecord, deleteContact, getContacts, initDB } from '@/services/database';
 import { useFocusEffect } from '@react-navigation/native';
@@ -214,7 +214,7 @@ export default function EmergencyInfoScreen() {
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={[styles.title, { color: colors.text }]}>Emergency SOS</Text>
             </View>
@@ -319,10 +319,10 @@ export default function EmergencyInfoScreen() {
 
                         <View style={styles.modalActions}>
                             <TouchableOpacity onPress={() => setShowAddModal(false)} style={styles.modalBtnCancel}>
-                                <Text style={{ color: '#888' }}>Cancel</Text>
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={handleAddContact} style={styles.modalBtnSave}>
-                                <Text style={{ color: '#fff' }}>Save</Text>
+                                <Text style={styles.saveBtnText}>Save</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -333,9 +333,9 @@ export default function EmergencyInfoScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingTop: 60 },
+    container: { flex: 1, paddingTop: 60, backgroundColor: '#fff' },
     header: { paddingHorizontal: 20, marginBottom: 20 },
-    title: { fontSize: 28, fontWeight: 'bold' },
+    title: { fontSize: 28, fontFamily: Typography.bold },
 
     sosContainer: { alignItems: 'center', marginBottom: 30 },
     sosButton: {
@@ -351,41 +351,43 @@ const styles = StyleSheet.create({
         shadowRadius: 20,
         elevation: 10,
     },
-    sosText: { color: '#fff', fontSize: 32, fontWeight: '900' },
-    sosSubtext: { marginTop: 15, fontSize: 13, opacity: 0.6 },
+    sosText: { color: '#fff', fontSize: 32, fontFamily: Typography.black },
+    sosSubtext: { marginTop: 15, fontSize: 13, fontFamily: Typography.regular, opacity: 0.6 },
 
     activeSOS: { alignItems: 'center', height: 150, justifyContent: 'center' },
-    countdownText: { fontSize: 60, fontWeight: 'bold', color: '#ea4335' },
-    sendingText: { fontSize: 16, fontWeight: '600', color: '#ea4335', marginBottom: 10 },
+    countdownText: { fontSize: 60, fontFamily: Typography.bold, color: '#ea4335' },
+    sendingText: { fontSize: 16, fontFamily: Typography.semiBold, color: '#ea4335', marginBottom: 10 },
     cancelSOSBtn: { paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#eee', borderRadius: 20 },
-    cancelSOSText: { fontWeight: '700' },
+    cancelSOSText: { fontFamily: Typography.bold },
 
     monitorCard: { marginHorizontal: 20, padding: 16, borderRadius: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    monitorTitle: { fontSize: 16, fontWeight: '700' },
-    monitorDesc: { fontSize: 13, opacity: 0.6 },
+    monitorTitle: { fontSize: 16, fontFamily: Typography.bold },
+    monitorDesc: { fontSize: 13, fontFamily: Typography.regular, opacity: 0.6 },
 
     divider: { height: 1, backgroundColor: '#eee', marginVertical: 20, marginHorizontal: 20 },
 
     contactsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 10 },
-    sectionTitle: { fontSize: 20, fontWeight: 'bold' },
+    sectionTitle: { fontSize: 20, fontFamily: Typography.bold },
     addBtn: { padding: 5 },
 
     listContent: { paddingHorizontal: 20 },
     card: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1 },
     contactInfo: { gap: 4 },
-    contactName: { fontSize: 16, fontWeight: '600' },
-    contactRelation: { fontSize: 12, opacity: 0.6 },
-    contactPhone: { fontSize: 14, fontWeight: '500', color: '#0a7ea4' },
-    contactEmail: { fontSize: 12, opacity: 0.7, marginTop: 2 },
+    contactName: { fontSize: 16, fontFamily: Typography.semiBold },
+    contactRelation: { fontSize: 12, fontFamily: Typography.regular, opacity: 0.6 },
+    contactPhone: { fontSize: 14, fontFamily: Typography.medium, color: '#0a7ea4' },
+    contactEmail: { fontSize: 12, fontFamily: Typography.regular, opacity: 0.7, marginTop: 2 },
     deleteBtn: { padding: 8 },
-    emptyText: { textAlign: 'center', marginTop: 20, opacity: 0.5 },
+    emptyText: { textAlign: 'center', marginTop: 20, fontFamily: Typography.regular, opacity: 0.5 },
 
     // Modal
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
     modalContent: { padding: 20, borderRadius: 20 },
-    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
-    input: { borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 15, fontSize: 16 },
+    modalTitle: { fontSize: 20, fontFamily: Typography.bold, marginBottom: 20 },
+    input: { borderWidth: 1, borderRadius: 10, padding: 12, marginBottom: 15, fontSize: 16, fontFamily: Typography.regular },
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 15 },
     modalBtnCancel: { padding: 10 },
+    cancelBtnText: { color: '#888', fontFamily: Typography.regular },
     modalBtnSave: { backgroundColor: '#0a7ea4', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 },
+    saveBtnText: { color: '#fff', fontFamily: Typography.semiBold },
 });

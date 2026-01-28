@@ -76,6 +76,7 @@ export async function transcribeAudio(audioUri: string) {
     }
 }
 
+
 export async function extractMedicinesFromText(text: string) {
     try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -101,6 +102,46 @@ export async function extractMedicinesFromText(text: string) {
         return JSON.parse(data.choices[0].message.content);
     } catch (error) {
         console.error('Groq Extraction Error:', error);
+        throw error;
+    }
+}
+
+export async function analyzeSymptoms(symptoms: string) {
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    {
+                        role: 'system',
+                        content: 'You are an AI medical assistant using emergency triage protocols. Evaluate the severity of the symptoms based on clinical urgency. \n' +
+                            '- HIGH: Life-threatening, severe pain, breathing difficulty, chest pain, stroke signs, "dying", or immediate emergency.\n' +
+                            '- MEDIUM: Significant discomfort, infection signs, requires medical attention soon but not immediately life-threatening.\n' +
+                            '- LOW: Minor ailments, colds, slight discomfort, can be managed at home.\n' +
+                            'Provide a SINGLE sentence of clear, calm advice. Return strict JSON.',
+                    },
+                    {
+                        role: 'user',
+                        content: `Analyze these symptoms: "${symptoms}". Return JSON with keys: "severity" (string: "LOW", "MEDIUM", "HIGH") and "advice" (string).`,
+                    },
+                ],
+                temperature: 0.1,
+                max_tokens: 256,
+                response_format: { type: 'json_object' }
+            }),
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+
+        return JSON.parse(data.choices[0].message.content);
+    } catch (error) {
+        console.error('Groq Analysis Error:', error);
         throw error;
     }
 }

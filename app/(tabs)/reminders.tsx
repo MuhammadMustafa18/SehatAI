@@ -1,6 +1,6 @@
 
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { deleteMedicine, getDoseHistory, getMedicines, logDose, MedicineRecord, updateMedicine } from '@/services/database';
 import { cancelMedicineNotifications, scheduleDoseWithNags } from '@/services/notifications';
@@ -212,15 +212,15 @@ export default function RemindersScreen() {
     };
 
     const renderItem = ({ item }: { item: MedicineRecord }) => (
-        <View style={[styles.card, { backgroundColor: colorScheme === 'light' ? '#fff' : '#1a1a1a', borderColor: '#eee' }]}>
+        <View style={[styles.card, { backgroundColor: colorScheme === 'light' ? '#fff' : '#fff', borderColor: '#eee' }]}>
             <View style={styles.cardHeader}>
                 <View style={styles.headerLeft}>
                     <View style={styles.iconBg}>
                         <IconSymbol name="pills.fill" size={20} color="#0a7ea4" />
                     </View>
                     <View>
-                        <Text style={[styles.medName, { color: colors.text }]}>{item.name}</Text>
-                        <Text style={[styles.medDosage, { color: colors.text }]}>{item.dosage}</Text>
+                        <Text style={[styles.medName, { color: '#11181C' }]}>{item.name}</Text>
+                        <Text style={[styles.medDosage, { color: '#666666' }]}>{item.dosage}</Text>
                     </View>
                 </View>
                 <TouchableOpacity onPress={() => handleDelete(item.id, item.name)} style={styles.deleteBtn}>
@@ -231,21 +231,21 @@ export default function RemindersScreen() {
             <View style={styles.divider} />
 
             <View style={styles.scheduleInfo}>
-                <Text style={[styles.freqText, { color: colors.text }]}>
-                    <IconSymbol name="clock.fill" size={12} color={colors.text} /> {item.frequency}x Daily
+                <Text style={[styles.freqText, { color: '#444444' }]}>
+                    <IconSymbol name="clock.fill" size={12} color="#444444" /> {item.frequency}x Daily
                 </Text>
                 <View style={styles.timesList}>
                     {item.times.map((time: string, idx: number) => (
-                        <View key={idx} style={styles.timeBadge}>
-                            <Text style={styles.timeText}>{time}</Text>
+                        <View key={idx} style={[styles.timeBadge, { backgroundColor: '#E3F2FD' }]}>
+                            <Text style={[styles.timeText, { color: '#0a7ea4' }]}>{time}</Text>
                         </View>
                     ))}
                 </View>
             </View>
 
             <View style={styles.actionRow}>
-                <TouchableOpacity style={[styles.actionBtn, styles.editBtn]} onPress={() => openEditModal(item)}>
-                    <Text style={styles.editBtnText}>Edit</Text>
+                <TouchableOpacity style={[styles.actionBtn, styles.editBtn, { backgroundColor: '#f0f0f0' }]} onPress={() => openEditModal(item)}>
+                    <Text style={[styles.editBtnText, { color: '#666666' }]}>Edit</Text>
                 </TouchableOpacity>
                 {actionableMeds.has(item.id) && (
                     <TouchableOpacity style={[styles.actionBtn, styles.takenBtn]} onPress={() => handleMarkAsTaken(item.id, item.name)}>
@@ -263,7 +263,7 @@ export default function RemindersScreen() {
                         onPress={() => toggleLinks(item.id)}
                     >
                         <IconSymbol name="cart.fill" size={14} color="#0a7ea4" />
-                        <Text style={[styles.linkSectionTitle, { color: colors.text }]}>
+                        <Text style={[styles.linkSectionTitle, { color: '#11181C' }]}>
                             Buy Online ({item.external_links.length})
                         </Text>
                         <IconSymbol
@@ -288,9 +288,9 @@ export default function RemindersScreen() {
     );
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.text }]}>My Reminders</Text>
+                <Text style={[styles.title, { color: '#11181C' }]}>My Reminders</Text>
             </View>
 
             {loading ? (
@@ -318,7 +318,7 @@ export default function RemindersScreen() {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <IconSymbol name="bell.slash.fill" size={48} color="#ccc" />
-                            <Text style={[styles.emptyText, { color: colors.text }]}>No active reminders</Text>
+                            <Text style={[styles.emptyText, { color: '#11181C' }]}>No active reminders</Text>
                             <Text style={styles.emptySubtext}>Scan a prescription to add one!</Text>
                         </View>
                     }
@@ -333,13 +333,13 @@ export default function RemindersScreen() {
                 onRequestClose={() => setShowEditModal(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-                        <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Reminder</Text>
-                        <Text style={[styles.modalSubtitle, { color: colors.text }]}>
+                    <View style={[styles.modalContent, { backgroundColor: '#FFFFFF' }]}>
+                        <Text style={[styles.modalTitle, { color: '#11181C' }]}>Edit Reminder</Text>
+                        <Text style={[styles.modalSubtitle, { color: '#666666' }]}>
                             {editingMed?.name}
                         </Text>
 
-                        <Text style={[styles.label, { color: colors.text }]}>Frequency</Text>
+                        <Text style={[styles.label, { color: '#11181C' }]}>Frequency</Text>
                         <View style={styles.freqRow}>
                             {[1, 2, 3, 4].map(num => (
                                 <TouchableOpacity
@@ -358,19 +358,19 @@ export default function RemindersScreen() {
                             ))}
                         </View>
 
-                        <Text style={[styles.label, { color: colors.text }]}>Timings</Text>
+                        <Text style={[styles.label, { color: '#11181C' }]}>Timings</Text>
                         <View style={styles.timesContainer}>
                             {editTimes.map((time, idx) => (
                                 <View key={idx} style={styles.timeInputRow}>
-                                    <Text style={{ color: colors.text, width: 60 }}>Dose {idx + 1}</Text>
+                                    <Text style={[styles.doseLabel, { color: '#11181C' }]}>Dose {idx + 1}</Text>
                                     <TouchableOpacity
-                                        style={[styles.timeInputBtn, { borderBottomColor: colors.text }]}
+                                        style={[styles.timeInputBtn, { borderBottomColor: '#cccccc' }]}
                                         onPress={() => {
                                             setActiveTimeIndex(idx);
                                             setShowTimePicker(true);
                                         }}
                                     >
-                                        <Text style={{ color: colors.text, fontSize: 16 }}>{time}</Text>
+                                        <Text style={[styles.timeInputText, { color: '#11181C' }]}>{time}</Text>
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -394,10 +394,10 @@ export default function RemindersScreen() {
 
                         <View style={styles.modalActions}>
                             <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowEditModal(false)}>
-                                <Text style={{ color: '#888' }}>Cancel</Text>
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.saveBtn} onPress={saveEdit}>
-                                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Update</Text>
+                                <Text style={styles.saveBtnText}>Update</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -408,9 +408,9 @@ export default function RemindersScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingTop: 60 },
+    container: { flex: 1, paddingTop: 60, backgroundColor: '#fff' },
     header: { paddingHorizontal: 20, marginBottom: 15 },
-    title: { fontSize: 24, fontWeight: 'bold' },
+    title: { fontSize: 24, fontFamily: Typography.bold },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     listContent: { paddingHorizontal: 20, paddingBottom: 100 },
 
@@ -418,58 +418,62 @@ const styles = StyleSheet.create({
     cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     iconBg: { width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(10, 126, 164, 0.1)', justifyContent: 'center', alignItems: 'center' },
-    medName: { fontSize: 16, fontWeight: '700' },
-    medDosage: { fontSize: 13, opacity: 0.7 },
+    medName: { fontSize: 16, fontFamily: Typography.bold },
+    medDosage: { fontSize: 13, fontFamily: Typography.regular, opacity: 0.7 },
     deleteBtn: { padding: 8 },
 
     divider: { height: 1, backgroundColor: '#eee', marginVertical: 12 },
 
     scheduleInfo: { gap: 8 },
-    freqText: { fontSize: 13, fontWeight: '600', opacity: 0.8 },
+    freqText: { fontSize: 13, fontFamily: Typography.semiBold, opacity: 0.8 },
     timesList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     timeBadge: { backgroundColor: '#E3F2FD', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-    timeText: { fontSize: 12, fontWeight: '600', color: '#0a7ea4' },
+    timeText: { fontSize: 12, fontFamily: Typography.semiBold, color: '#0a7ea4' },
 
     emptyContainer: { alignItems: 'center', marginTop: 100, gap: 10 },
-    emptyText: { fontSize: 18, fontWeight: '600', marginTop: 10 },
-    emptySubtext: { color: '#888' },
+    emptyText: { fontSize: 18, fontFamily: Typography.semiBold, marginTop: 10 },
+    emptySubtext: { color: '#888', fontFamily: Typography.regular },
 
     // Modal Styles
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
     modalContent: { width: '100%', borderRadius: 20, padding: 24, elevation: 5 },
-    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
-    modalSubtitle: { fontSize: 14, opacity: 0.7, marginBottom: 20 },
-    label: { fontSize: 16, fontWeight: '600', marginTop: 15, marginBottom: 10 },
+    modalTitle: { fontSize: 20, fontFamily: Typography.bold, marginBottom: 5 },
+    modalSubtitle: { fontSize: 14, fontFamily: Typography.regular, opacity: 0.7, marginBottom: 20 },
+    label: { fontSize: 16, fontFamily: Typography.semiBold, marginTop: 15, marginBottom: 10 },
 
     freqRow: { flexDirection: 'row', gap: 10 },
     freqOption: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ccc', justifyContent: 'center', alignItems: 'center' },
     freqOptionSelected: { backgroundColor: '#0a7ea4', borderColor: '#0a7ea4' },
-    freqOptionText: { fontWeight: '600', color: '#333' },
+    freqOptionText: { fontFamily: Typography.semiBold, color: '#333' },
     freqTextSelected: { color: '#fff' },
 
     timesContainer: { gap: 10 },
     timeInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    doseLabel: { width: 60, fontFamily: Typography.regular },
     timeInputBtn: { flex: 1, padding: 8, borderBottomWidth: 1 },
+    timeInputText: { fontSize: 16, fontFamily: Typography.regular },
 
     // Action Buttons
     actionRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
     actionBtn: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', padding: 10, borderRadius: 8, gap: 6 },
     editBtn: { backgroundColor: '#f0f0f0' },
-    editBtnText: { fontWeight: '600', color: '#666' },
+    editBtnText: { fontFamily: Typography.semiBold, color: '#666' },
     takenBtn: { backgroundColor: '#34A853' },
-    takenBtnText: { fontWeight: '600', color: '#fff' },
+    takenBtnText: { fontFamily: Typography.semiBold, color: '#fff' },
 
     linkContainer: { marginTop: 12, borderTopWidth: 1, borderTopColor: '#eee', paddingTop: 10 },
     linkToggleHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, backgroundColor: 'rgba(10, 126, 164, 0.08)', borderRadius: 8 },
-    linkSectionTitle: { fontSize: 13, fontWeight: '600', flex: 1 },
+    linkSectionTitle: { fontSize: 13, fontFamily: Typography.semiBold, flex: 1 },
     linksExpanded: { marginTop: 8, gap: 6 },
     linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(10, 126, 164, 0.05)', padding: 10, borderRadius: 8 },
-    linkText: { color: '#0a7ea4', fontWeight: '500', fontSize: 12, flex: 1 },
+    linkText: { color: '#0a7ea4', fontFamily: Typography.medium, fontSize: 12, flex: 1 },
 
     pharmacyButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#4285F4', padding: 16, borderRadius: 16, gap: 10, marginTop: 20, marginBottom: 20 },
-    pharmacyButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    pharmacyButtonText: { color: '#fff', fontSize: 16, fontFamily: Typography.semiBold },
 
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 30 },
     cancelBtn: { padding: 10 },
+    cancelBtnText: { color: '#888', fontFamily: Typography.regular },
     saveBtn: { backgroundColor: '#0a7ea4', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
+    saveBtnText: { color: '#fff', fontFamily: Typography.bold },
 });

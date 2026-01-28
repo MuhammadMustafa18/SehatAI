@@ -1,7 +1,8 @@
 import { ThemedText } from '@/components/themed-text';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -9,20 +10,25 @@ export default function HomeScreen() {
   const colorScheme = useColorScheme() ?? 'light';
   const colors = Colors[colorScheme];
 
+  const router = useRouter();
+
   const services = [
-    { id: '1', title: 'Consultation', icon: 'medical.pill.fill', color: '#E3F2FD' },
-    { id: '2', title: 'Pharmacy', icon: 'medical.pill.fill', color: '#F3E5F5' },
-    { id: '3', title: 'Lab Tests', icon: 'doc.text.fill', color: '#E8F5E9' },
-    { id: '4', title: 'Emergency', icon: 'bolt.fill', color: '#FFEBEE' },
+    { id: '1', title: 'Symptoms', icon: 'waveform.path.ecg', color: '#E3F2FD', route: '/symptomTriage' },
+    { id: '2', title: 'Medicine', icon: 'doc.text.fill', color: '#F3E5F5', route: '/medicineFinder' },
+    { id: '3', title: 'Reminders', icon: 'bell.fill', color: '#E8F5E9', route: '/reminders' },
+    { id: '4', title: 'Emergency', icon: 'exclamationmark.triangle.fill', color: '#FFEBEE', route: '/emergencyinfo' },
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <ThemedText type="defaultSemiBold" style={styles.greeting}>Hello, John!</ThemedText>
-          <ThemedText type="title" style={styles.appName}>SehatAI</ThemedText>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require('../../assets/logo.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
         </View>
         <TouchableOpacity style={styles.notificationBtn}>
           <IconSymbol name="paperplane.fill" size={24} color={colors.text} />
@@ -31,10 +37,10 @@ export default function HomeScreen() {
 
       {/* Search Bar */}
       <View style={[styles.searchContainer, { backgroundColor: colorScheme === 'light' ? '#F5F5F5' : '#1A1A1A' }]}>
-        <IconSymbol name="house.fill" size={20} color="#888" />
+        <IconSymbol name="house.fill" size={20} color="#fff" />
         <TextInput
           placeholder="Search for doctors, labs..."
-          placeholderTextColor="#888"
+          placeholderTextColor="#fff"
           style={[styles.searchInput, { color: colors.text }]}
         />
       </View>
@@ -43,7 +49,11 @@ export default function HomeScreen() {
       <ThemedText type="subtitle" style={styles.sectionTitle}>Our Services</ThemedText>
       <View style={styles.servicesGrid}>
         {services.map((service) => (
-          <TouchableOpacity key={service.id} style={styles.serviceItem}>
+          <TouchableOpacity
+            key={service.id}
+            style={styles.serviceItem}
+            onPress={() => router.push(service.route as any)}
+          >
             <View style={[styles.iconCircle, { backgroundColor: service.color }]}>
               <IconSymbol name={service.icon as any} size={28} color="#111" />
             </View>
@@ -81,6 +91,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 60,
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -88,12 +99,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 25,
   },
-  greeting: {
-    fontSize: 16,
-    opacity: 0.7,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  appName: {
-    fontSize: 28,
+  headerLogo: {
+    width: 120,
+    height: 40,
   },
   notificationBtn: {
     padding: 10,
@@ -112,6 +124,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 10,
     fontSize: 16,
+    fontFamily: Typography.regular,
   },
   sectionTitle: {
     fontSize: 20,
@@ -138,7 +151,7 @@ const styles = StyleSheet.create({
   serviceTitle: {
     fontSize: 12,
     textAlign: 'center',
-    fontWeight: '500',
+    fontFamily: Typography.medium,
   },
   promoCard: {
     backgroundColor: '#0a7ea4',
@@ -159,6 +172,7 @@ const styles = StyleSheet.create({
   promoSub: {
     color: 'rgba(255, 255, 255, 0.8)',
     fontSize: 13,
+    fontFamily: Typography.regular,
   },
   promoImage: {
     width: 80,

@@ -3,7 +3,7 @@ import React from 'react';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
@@ -12,36 +12,54 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: '#0a7ea4',
+        tabBarInactiveTintColor: '#888',
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarLabelStyle: {
+          fontFamily: Typography.medium,
+          fontSize: 10,
+        },
+        tabBarStyle: {
+          paddingTop: 5,
+          height: 85,
+          paddingBottom: 25,
+          backgroundColor: '#fff',
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="appointments"
+        name="symptomTriage"
         options={{
-          title: 'Appointments',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
+          title: 'Symptoms',
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="waveform.path.ecg" color={color} />,
         }}
       />
       <Tabs.Screen
         name="medicineFinder"
         options={{
-          title: 'Medicine Finder',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="doc.text.fill" color={color} />,
+          title: 'Medicine',
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="doc.text.fill" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="reminders"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+          title: 'Reminders',
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="bell.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="emergencyinfo"
+        options={{
+          title: 'SOS',
+          tabBarIcon: ({ color }) => <IconSymbol size={26} name="exclamationmark.triangle.fill" color={color} />,
         }}
       />
     </Tabs>

@@ -1,10 +1,11 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
+import { Colors, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { analyzePrescription, extractMedicinesFromText, transcribeAudio } from '@/services/groq';
 import { searchMedicineOnline, SearchResult } from '@/services/search';
 
 // NEW SERVICES
+import PharmaciesModal from '@/components/PharmaciesModal';
 import { addMedicine, initDB } from '@/services/database';
 import { registerForPushNotificationsAsync, scheduleDoseWithNags } from '@/services/notifications';
 import RNDateTimePicker from '@react-native-community/datetimepicker';
@@ -52,6 +53,9 @@ export default function MedicineFinderScreen() {
     // Time Picker State
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [activeTimeIndex, setActiveTimeIndex] = useState(0);
+
+    // Pharmacy Modal State
+    const [showPharmaciesModal, setShowPharmaciesModal] = useState(false);
 
     // Animations & Refs
     const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -431,10 +435,10 @@ export default function MedicineFinderScreen() {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={[styles.container, { backgroundColor: colors.background }]}
+            style={styles.container}
         >
             <View style={styles.header}>
-                <Text style={[styles.title, { color: colors.text }]}>Medicine grinder</Text>
+                <Text style={[styles.title, { color: colors.text }]}>Medicine Finder</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -456,13 +460,13 @@ export default function MedicineFinderScreen() {
 
                 {result && (
                     <View style={styles.results}>
-                        <View style={[styles.summary, { backgroundColor: colorScheme === 'light' ? '#E3F2FD' : '#1D3D47' }]}>
+                        <View style={[styles.summary, { backgroundColor: '#E3F2FD' }]}>
                             <Text style={[styles.summaryTitle, { color: colors.text }]}>AI Analysis</Text>
                             <Text style={[styles.summaryText, { color: colors.text }]}>{result.summary}</Text>
                         </View>
 
                         {result.medicines.map((med, idx) => (
-                            <View key={idx} style={[styles.medCard, { backgroundColor: colorScheme === 'light' ? '#fff' : '#1a1a1a' }]}>
+                            <View key={idx} style={[styles.medCard, { backgroundColor: '#fff' }]}>
                                 <View style={styles.medHeader}>
                                     <View>
                                         <Text style={[styles.medName, { color: colors.text }]}>{med.name}</Text>
@@ -486,7 +490,7 @@ export default function MedicineFinderScreen() {
                                 )}
 
                                 <TouchableOpacity
-                                    style={[styles.reminderBtn, { backgroundColor: colorScheme === 'light' ? '#E3F2FD' : '#2C3E50' }]}
+                                    style={[styles.reminderBtn, { backgroundColor: '#E3F2FD' }]}
                                     onPress={() => openReminderSetup(med)}
                                 >
                                     <IconSymbol name="bell.fill" size={16} color="#0a7ea4" />
@@ -495,17 +499,19 @@ export default function MedicineFinderScreen() {
                             </View>
                         ))}
 
-                        {/* Google Maps Pharmacy Finder - Direct Link */}
+                        {/* Pharmacy Finder - Now with Modal */}
                         <TouchableOpacity
-                            style={[styles.pharmacyButton, { marginTop: 20, backgroundColor: '#4285F4' }]}
-                            onPress={() => Linking.openURL('https://www.google.com/maps/search/pharmacies+near+me')}
+                            style={[styles.pharmacyButton, { marginTop: 20, backgroundColor: '#4ADE80' }]}
+                            onPress={() => setShowPharmaciesModal(true)}
                         >
                             <IconSymbol name="map.fill" size={20} color="#fff" />
-                            <Text style={styles.pharmacyButtonText}>Find Pharmacies on Google Maps</Text>
+                            <Text style={styles.pharmacyButtonText}>Find Nearby Pharmacies</Text>
                         </TouchableOpacity>
                     </View>
                 )}
             </ScrollView>
+
+            <PharmaciesModal visible={showPharmaciesModal} onClose={() => setShowPharmaciesModal(false)} />
 
 
 
@@ -515,13 +521,13 @@ export default function MedicineFinderScreen() {
                     <Animated.View style={[styles.mediaMenu, { opacity: menuAnim, transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
                         <TouchableOpacity style={styles.mediaBtn} onPress={takePhoto}>
                             <View style={styles.mediaIconBg}>
-                                <IconSymbol name="camera.fill" size={24} color="#fff" />
+                                <IconSymbol name="camera.fill" size={24} color="#0a7ea4" />
                             </View>
                             <Text style={styles.mediaLabel}>Camera</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={styles.mediaBtn} onPress={pickImage}>
                             <View style={styles.mediaIconBg}>
-                                <IconSymbol name="photo.fill" size={24} color="#fff" />
+                                <IconSymbol name="photo.fill" size={24} color="#0a7ea4" />
                             </View>
                             <Text style={styles.mediaLabel}>Photos</Text>
                         </TouchableOpacity>
@@ -532,7 +538,7 @@ export default function MedicineFinderScreen() {
             {/* Input Bar */}
             <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
                 <View style={styles.inputRow}>
-                    <View style={[styles.inputBar, { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : '#222' }]}>
+                    <View style={[styles.inputBar, { backgroundColor: '#f5f5f5' }]}>
                         {!isRecording ? (
                             <>
                                 <TouchableOpacity style={styles.plusBtn} onPress={() => setShowMediaMenu(!showMediaMenu)}>
@@ -616,7 +622,7 @@ export default function MedicineFinderScreen() {
                         <View style={styles.timesContainer}>
                             {reminderTimes.map((time, idx) => (
                                 <View key={idx} style={styles.timeInputRow}>
-                                    <Text style={{ color: colors.text, width: 60 }}>Dose {idx + 1}</Text>
+                                    <Text style={[styles.doseLabel, { color: colors.text }]}>Dose {idx + 1}</Text>
                                     <TouchableOpacity
                                         style={[styles.timeInputBtn, { borderBottomColor: colors.text }]}
                                         onPress={() => {
@@ -624,7 +630,7 @@ export default function MedicineFinderScreen() {
                                             setShowTimePicker(true);
                                         }}
                                     >
-                                        <Text style={{ color: colors.text, fontSize: 16 }}>{time}</Text>
+                                        <Text style={[styles.timeInputText, { color: colors.text }]}>{time}</Text>
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -648,10 +654,10 @@ export default function MedicineFinderScreen() {
 
                         <View style={styles.modalActions}>
                             <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowReminderModal(false)}>
-                                <Text style={{ color: '#888' }}>Cancel</Text>
+                                <Text style={styles.cancelBtnText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.saveBtn} onPress={saveReminder}>
-                                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Save & Schedule</Text>
+                                <Text style={styles.saveBtnText}>Save & Schedule</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -662,13 +668,13 @@ export default function MedicineFinderScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingTop: 60 },
+    container: { flex: 1, paddingTop: 60, backgroundColor: '#fff' },
     header: { paddingHorizontal: 20, marginBottom: 10 },
-    title: { fontSize: 24, fontWeight: 'bold' },
+    title: { fontSize: 24, fontFamily: Typography.bold },
     scrollContent: { paddingHorizontal: 20, paddingBottom: 100 },
 
     loadingContainer: { alignItems: 'center', marginVertical: 30 },
-    loadingText: { marginTop: 10, fontWeight: '500' },
+    loadingText: { marginTop: 10, fontFamily: Typography.medium },
 
     imagePreviewContainer: { width: '100%', height: 300, borderRadius: 20, overflow: 'hidden', marginBottom: 20 },
     imagePreview: { width: '100%', height: '100%' },
@@ -676,17 +682,17 @@ const styles = StyleSheet.create({
 
     results: { gap: 15 },
     summary: { padding: 18, borderRadius: 16 },
-    summaryTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
-    summaryText: { fontSize: 14, lineHeight: 20, opacity: 0.9 },
+    summaryTitle: { fontSize: 16, fontFamily: Typography.bold, marginBottom: 4 },
+    summaryText: { fontSize: 14, fontFamily: Typography.regular, lineHeight: 20, opacity: 0.9 },
 
     medCard: { padding: 18, borderRadius: 16, borderWidth: 1, borderColor: '#eee' },
     medHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-    medName: { fontSize: 17, fontWeight: 'bold' },
-    medDosage: { fontSize: 13, opacity: 0.6, marginTop: 2 },
+    medName: { fontSize: 17, fontFamily: Typography.bold },
+    medDosage: { fontSize: 13, fontFamily: Typography.regular, opacity: 0.6, marginTop: 2 },
     divider: { height: 1, backgroundColor: '#eee', marginVertical: 12 },
     links: { gap: 10 },
     link: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'rgba(10, 126, 164, 0.05)', padding: 12, borderRadius: 10 },
-    linkSource: { fontSize: 13, fontWeight: '500', flex: 1, marginRight: 10 },
+    linkSource: { fontSize: 13, fontFamily: Typography.medium, flex: 1, marginRight: 10 },
 
     reminderBtn: {
         marginTop: 15,
@@ -699,36 +705,39 @@ const styles = StyleSheet.create({
     },
     reminderBtnText: {
         color: '#0a7ea4',
-        fontWeight: '600',
+        fontFamily: Typography.semiBold,
     },
 
     // Modal
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
     modalContent: { width: '100%', borderRadius: 20, padding: 24, elevation: 5 },
-    modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 5 },
-    modalSubtitle: { fontSize: 14, opacity: 0.7, marginBottom: 20 },
-    label: { fontSize: 16, fontWeight: '600', marginTop: 15, marginBottom: 10 },
+    modalTitle: { fontSize: 20, fontFamily: Typography.bold, marginBottom: 5 },
+    modalSubtitle: { fontSize: 14, fontFamily: Typography.regular, opacity: 0.7, marginBottom: 20 },
+    label: { fontSize: 16, fontFamily: Typography.semiBold, marginTop: 15, marginBottom: 10 },
 
     freqRow: { flexDirection: 'row', gap: 10 },
     freqOption: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ccc', justifyContent: 'center', alignItems: 'center' },
     freqOptionSelected: { backgroundColor: '#0a7ea4', borderColor: '#0a7ea4' },
-    freqText: { fontWeight: '600', color: '#333' },
+    freqText: { fontFamily: Typography.semiBold, color: '#333' },
     freqTextSelected: { color: '#fff' },
 
     timesContainer: { gap: 10 },
     timeInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-    timeInput: { flex: 1, padding: 8, fontSize: 16 },
+    doseLabel: { width: 60, fontFamily: Typography.regular },
     timeInputBtn: { flex: 1, padding: 8, borderBottomWidth: 1 },
+    timeInputText: { fontSize: 16, fontFamily: Typography.regular },
 
     modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 20, marginTop: 30 },
     cancelBtn: { padding: 10 },
+    cancelBtnText: { color: '#888', fontFamily: Typography.regular },
     saveBtn: { backgroundColor: '#0a7ea4', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20 },
+    saveBtnText: { color: '#fff', fontFamily: Typography.bold },
 
     // Dynamic UI
     mediaMenu: {
         flexDirection: 'row',
         padding: 20,
-        backgroundColor: '#1a1a1a',
+        backgroundColor: '#fff',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         gap: 20,
@@ -739,26 +748,26 @@ const styles = StyleSheet.create({
         elevation: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
         zIndex: 100,
     },
     mediaBtn: { alignItems: 'center', gap: 5 },
-    mediaIconBg: { width: 56, height: 56, backgroundColor: '#333', borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-    mediaLabel: { color: '#fff', fontSize: 12 },
+    mediaIconBg: { width: 56, height: 56, backgroundColor: '#f0f0f0', borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+    mediaLabel: { color: '#333', fontSize: 12, fontFamily: Typography.regular },
 
     inputContainer: { padding: 10, position: 'absolute', bottom: 0, left: 0, right: 0 },
     inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     inputBar: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 8, borderRadius: 30, paddingLeft: 12, minHeight: 48 },
     plusBtn: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center', borderRadius: 20 },
-    textInput: { flex: 1, paddingHorizontal: 12, fontSize: 16, height: 40 },
+    textInput: { flex: 1, paddingHorizontal: 12, fontSize: 16, height: 40, fontFamily: Typography.regular },
 
     actionFab: { width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2 },
 
     recordingState: { flex: 1, flexDirection: 'row', alignItems: 'center', paddingLeft: 10 },
     recordingDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#ea4335', marginRight: 10 },
-    recordingTime: { fontSize: 16, fontWeight: '700', marginRight: 10 },
-    recordingText: { fontSize: 16, color: '#888' },
+    recordingTime: { fontSize: 16, fontFamily: Typography.bold, marginRight: 10 },
+    recordingText: { fontSize: 16, fontFamily: Typography.regular, color: '#888' },
 
     // Pharmacy Finder
     pharmacyButton: {
@@ -775,49 +784,5 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 3,
     },
-    pharmacyButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-
-    pharmacyResults: { gap: 15, marginTop: 20 },
-    pharmacyTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
-    pharmacyCard: {
-        padding: 16,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: '#eee',
-        gap: 12,
-    },
-    pharmacyCardHeader: { flexDirection: 'row', gap: 12 },
-    pharmacyName: { fontSize: 16, fontWeight: '700' },
-    pharmacyAddress: { fontSize: 13, opacity: 0.7, marginTop: 4 },
-    ratingBadge: {
-        backgroundColor: '#FFF3E0',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    ratingText: { fontSize: 13, fontWeight: '600', color: '#FF8F00' },
-    pharmacyFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        flexWrap: 'wrap',
-    },
-    statusBadge: {
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    statusText: { color: '#fff', fontSize: 11, fontWeight: '600' },
-    distanceText: { fontSize: 13, opacity: 0.6 },
-    directionsButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: 'rgba(10, 126, 164, 0.1)',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        gap: 4,
-        marginLeft: 'auto',
-    },
-    directionsText: { color: '#0a7ea4', fontSize: 13, fontWeight: '600' },
+    pharmacyButtonText: { color: '#fff', fontSize: 16, fontFamily: Typography.semiBold },
 });
